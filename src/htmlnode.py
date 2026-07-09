@@ -41,3 +41,23 @@ class LeafNode(HTMLNode):
 
     def __repr__(self):
         return f"LeafNode({self.tag}, {self.value}, {self.props})"
+
+# any htmlnode that has children is a parent node
+class ParentNode(HTMLNode):
+    def __init__(self, tag: str, children: list["HTMLNode"], props: dict | None = None):
+        super().__init__(tag, None, children, props)
+
+    def to_html(self):
+        if not self.tag:
+            raise ValueError("parent node has no tag")
+        if self.children is None:
+            raise ValueError("parent node has no children")
+        
+        res = []
+        for child in self.children:
+            r = child.to_html()
+            res.append(r)
+
+        res = "".join(res)
+
+        return f"<{self.tag}>{res}</{self.tag}>"
