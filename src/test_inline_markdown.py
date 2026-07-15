@@ -1,13 +1,12 @@
 '''
-Unit test for inline_markdown.py that check different types of delimiters
+Unit test for inline_markdown.py that check different types of delimiters and regex statements
 '''
 import unittest
-from inline_markdown import split_nodes_delimiter
+from inline_markdown import *
 from textnode import *
 
 class TestSplitNodesDelimiter(unittest.TestCase):
     def test_no_delimiter(self):
-        # string with no delimter. Should retunr just text
         node = TextNode("This is text with a no block word", TextType.TEXT)
         new_nodes = split_nodes_delimiter([node], "**", TextType.BOLD)
         self.assertEqual(new_nodes,
@@ -17,7 +16,6 @@ class TestSplitNodesDelimiter(unittest.TestCase):
         )
 
     def test_double_delimiter(self):
-        # A string with the delimiter used twice, producing two separate bolded/coded sections
         node = TextNode("This is text with a **bold block once** and a **bold block twice**", TextType.TEXT)
         new_nodes = split_nodes_delimiter([node], "**", TextType.BOLD)
         self.assertEqual(new_nodes,
@@ -30,13 +28,11 @@ class TestSplitNodesDelimiter(unittest.TestCase):
         )
 
     def test_empty_string(self):
-        # An empty string edge case
         node = TextNode("", TextType.TEXT)
         new_nodes = split_nodes_delimiter([node], "**", TextType.BOLD)
         self.assertEqual(new_nodes, [])
 
     def test_delimiter_at_start(self):
-        # delimiter at the very start of the text
         node = TextNode("**This is text with a bold block** word", TextType.TEXT)
         new_nodes = split_nodes_delimiter([node], "**", TextType.BOLD)
         self.assertEqual(new_nodes,
@@ -47,7 +43,6 @@ class TestSplitNodesDelimiter(unittest.TestCase):
         )
 
     def test_nontext_node(self):
-        # node whose text_type is not TEXT
         node = TextNode("This is code block", TextType.CODE)
         new_nodes = split_nodes_delimiter([node], "**", TextType.BOLD)
         self.assertEqual(new_nodes,
@@ -57,7 +52,6 @@ class TestSplitNodesDelimiter(unittest.TestCase):
         )
 
     def test_multiple_nodes(self):
-        # multiple nodes passed into new_nodes
         node = TextNode("This is code block", TextType.CODE)
         node1 = TextNode("This is text with a **bold block** word", TextType.TEXT)
         new_nodes = split_nodes_delimiter([node, node1], "**", TextType.BOLD)
@@ -103,6 +97,60 @@ class TestSplitNodesDelimiter(unittest.TestCase):
             ]
         )
 
+    # testing regex statements
+    def test_extract_markdown_images(self):
+        matches = extract_markdown_images(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png)"
+        )
+        self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png")], matches)
+    
+
+    def test_extract_markdown_links(self):
+        matches = extract_markdown_links(
+            "This is text with a link [to boot dev](https://www.boot.dev)"
+        )
+        self.assertListEqual([("to boot dev", "https://www.boot.dev")], matches)
+
+
+    def test_multiple_extract_markdown_images(self):
+        matches = extract_markdown_images(
+            "This is text with a ![rick roll](https://i.imgur.com/aKaOqIh.gif) and ![obi wan](https://i.imgur.com/fJRm4Vk.jpeg)"
+        )
+        self.assertListEqual([("rick roll", "https://i.imgur.com/aKaOqIh.gif"), ("obi wan", "https://i.imgur.com/fJRm4Vk.jpeg")], matches)
+
+
+    def test_multiple_extract_markdown_links(self):
+        matches = extract_markdown_links(
+            "This is text with a link [to boot dev](https://www.boot.dev) and [to youtube](https://www.youtube.com/@bootdotdev)"
+        )
+        self.assertListEqual([("to boot dev", "https://www.boot.dev"), ("to youtube", "https://www.youtube.com/@bootdotdev")], matches)
+
+
+    def test_nonlink_brackets(self):
+        matches = extract_markdown_images(
+            "Check the [docs] (not a link) and also ![alt](url.com)"
+        )
+        self.assertListEqual([("alt", "url.com")], matches)
+
+
+    def test_nonlink_parens(self):
+        matches = extract_markdown_images(
+            "(just a note) and ![alt](url.com)"
+        )
+        self.assertListEqual([("alt", "url.com")], matches)
+
+
+    def test_image_and_link(self):
+        matches = extract_markdown_images(
+            "[boot](boot.dev) and ![alt](url.com)"
+        )
+        self.assertListEqual([("alt", "url.com")], matches)
+
+    def test_image_no_link(self):
+        matches = extract_markdown_images(
+            "testing ![image no link]()"
+        )
+        self.assertListEqual([("image no link", "")], matches)
 
 if __name__ == "__main__":
     unittest.main()
