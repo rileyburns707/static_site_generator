@@ -152,5 +152,100 @@ class TestSplitNodesDelimiter(unittest.TestCase):
         )
         self.assertListEqual([("image no link", "")], matches)
 
+    # test split_nodes_link and split_nodes_image
+    def test_split_images(self):
+        node = TextNode(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+            [
+                TextNode("This is text with an ", TextType.TEXT),
+                TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+                TextNode(" and another ", TextType.TEXT),
+                TextNode(
+                    "second image", TextType.IMAGE, "https://i.imgur.com/3elNhQu.png"
+                ),
+            ],
+            new_nodes,
+        )
+    
+    def test_no_images_or_links(self):
+        #Text with no images/links at all (should return the node unchanged)
+        node = TextNode(
+            "This is text with nothing",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual([TextNode("This is text with nothing", TextType.TEXT)], new_nodes)
+    
+    def test_start_with_image(self):
+        #Text that starts immediately with an image/link (no leading text before it)
+        node = TextNode(
+            "![image](https://i.imgur.com/zjjcJKZ.png) at the start",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+            [
+                TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+                TextNode(" at the start", TextType.TEXT),
+            ],
+            new_nodes,
+        )
+    
+    def test_end_with_link(self):
+        #Text that ends immediately after an image/link (no trailing text after it)
+        node = TextNode(
+            "link at end [link](url.com)",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_link([node])
+        self.assertListEqual(
+            [
+                TextNode("link at end ", TextType.TEXT),
+                TextNode("link", TextType.LINK, "url.com"),
+            ],
+            new_nodes,
+        )
+
+    def test_back_to_back_images(self):
+        # Text with multiple images/links back-to-back
+        node = TextNode(
+            "![image](https://i.imgur.com/zjjcJKZ.png)![second image](https://i.imgur.com/3elNhQu.png)",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+            [
+                TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+                TextNode("second image", TextType.IMAGE, "https://i.imgur.com/3elNhQu.png"),
+            ],
+            new_nodes,
+        )
+
+    def test_non_text_node(self):
+        #A TextNode that isn't TextType.TEXT to begin with (should pass through untouched)
+        node = TextNode("`This is code`", TextType.CODE)
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual([TextNode("`This is code`", TextType.CODE)], new_nodes)
+
+    def test_link_and_look_a_like(self):
+        #Text with both a link and something that looks like an image (to make sure your link regex doesn't accidentally grab image syntax, and vice versa)
+        node = TextNode(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and a fake [second image test] but it shouldn't (work)",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+            [
+                TextNode("This is text with an ", TextType.TEXT),
+                TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+                TextNode(" and a fake [second image test] but it shouldn't (work)", TextType.TEXT),
+            ],
+            new_nodes,
+        )
+
 if __name__ == "__main__":
     unittest.main()
