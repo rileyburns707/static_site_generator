@@ -247,5 +247,75 @@ class TestSplitNodesDelimiter(unittest.TestCase):
             new_nodes,
         )
 
+
+    # test text_to_textnodes function that combines all the split node functions together
+    def test_if_eq(self):
+        text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        new_text = text_to_textnodes(text)
+        self.assertListEqual(
+            [
+                TextNode("This is ", TextType.TEXT),
+                TextNode("text", TextType.BOLD),
+                TextNode(" with an ", TextType.TEXT),
+                TextNode("italic", TextType.ITALIC),
+                TextNode(" word and a ", TextType.TEXT),
+                TextNode("code block", TextType.CODE),
+                TextNode(" and an ", TextType.TEXT),
+                TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+                TextNode(" and a ", TextType.TEXT),
+                TextNode("link", TextType.LINK, "https://boot.dev"),
+            ],
+            new_text
+        )
+
+    def test_different_order(self):
+        text = "This is _italic_ with an **text** word and a `code block` and an [link](https://boot.dev) and a ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg)"
+        new_text = text_to_textnodes(text)
+        self.assertListEqual(
+            [
+                TextNode("This is ", TextType.TEXT),
+                TextNode("italic", TextType.ITALIC),
+                TextNode(" with an ", TextType.TEXT),
+                TextNode("text", TextType.BOLD),
+                TextNode(" word and a ", TextType.TEXT),
+                TextNode("code block", TextType.CODE),
+                TextNode(" and an ", TextType.TEXT),
+                TextNode("link", TextType.LINK, "https://boot.dev"),
+                TextNode(" and a ", TextType.TEXT),
+                TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+            ],
+            new_text
+        )
+
+    def test_not_all_function_used(self):
+        text = "[a link](url) and **bold**"
+        new_text = text_to_textnodes(text)
+        self.assertListEqual(
+            [
+                TextNode("a link", TextType.LINK, "url"),
+                TextNode(" and ", TextType.TEXT),
+                TextNode("bold", TextType.BOLD),
+            ],
+            new_text
+        )
+
+    def test_no_markdwown(self):
+        text = "No markdown used"
+        new_text = text_to_textnodes(text)
+        self.assertListEqual([TextNode("No markdown used", TextType.TEXT)], new_text)
+
+    def test_double_markdown(self):
+        text = "**og bold** and **bold**"
+        new_text = text_to_textnodes(text)
+        self.assertListEqual(
+            [
+                TextNode("og bold", TextType.BOLD),
+                TextNode(" and ", TextType.TEXT),
+                TextNode("bold", TextType.BOLD),
+            ],
+            new_text
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

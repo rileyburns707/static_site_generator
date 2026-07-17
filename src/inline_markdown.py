@@ -1,9 +1,22 @@
 """
 Splits TextNode objects by markdown delimiters like ** and `. Use regex to split links and images.
 Splits raw markdown text into TextNodes based on images and links.
+Top function puts all the splitting functions together
 """
 from textnode import TextType, TextNode
 import re
+
+def text_to_textnodes(text: str) -> list[TextNode]:
+    new_nodes = []
+    curr_text = TextNode(text, TextType.TEXT)
+
+    bold_delimiter_split = split_nodes_delimiter([curr_text], "**", TextType.BOLD)
+    italic_delimiter_split = split_nodes_delimiter(bold_delimiter_split, "_", TextType.ITALIC)
+    code_delimiter_split = split_nodes_delimiter(italic_delimiter_split, "`", TextType.CODE)
+    image_delimiter_split = split_nodes_image(code_delimiter_split)
+    link_delimiter_split = split_nodes_link(image_delimiter_split)
+
+    return link_delimiter_split
 
 def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: TextType) -> list[TextNode]:
     # TextNode structure = (text, text_type, url)
